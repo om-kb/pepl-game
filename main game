@@ -1,0 +1,1000 @@
+import mysql.connector
+import random
+from datetime import datetime
+from tkinter import *
+from PIL import ImageTk,Image
+mycon= mysql.connector.connect (host='localhost', password='dpsbn', user='root',database="pepl")
+mycur=mycon.cursor()
+mycur.execute("select * from players")
+results = mycur.fetchall()
+mycur.execute("select * from players where position='GK'")
+gks=mycur.fetchall()
+mycur.execute("select * from players where position='RB'")
+rbs=mycur.fetchall()
+mycur.execute("select * from players where position='LB'")
+lbs=mycur.fetchall()
+mycur.execute("select * from players where position='CB'")
+cbs=mycur.fetchall()
+mycur.execute("select * from players where position='CM'")
+cms=mycur.fetchall()
+mycur.execute("select * from players where position='CDM'")
+cdms=mycur.fetchall()
+mycur.execute("select * from players where position='CAM'")
+cams=mycur.fetchall()
+mycur.execute("select * from players where position='ST'")
+sts=mycur.fetchall()
+mycur.execute("select * from players where position='LW'")
+lws=mycur.fetchall()
+mycur.execute("select * from players where position='RW'")
+rws=mycur.fetchall()
+mycur.execute("select * from players where cardtype='bronze'")
+bronze=mycur.fetchall()
+mycur.execute("select * from players where cardtype='silver'")
+silver=mycur.fetchall()
+mycur.execute("select * from players where cardtype='gold'")
+gold=mycur.fetchall()
+mycur.execute("select * from players where cardtype='icon'")
+icon=mycur.fetchall()
+root=Tk()
+team=[]
+user=''
+disc=False
+bal=0
+fil=''
+pos=''
+eleven=[]
+tctc=''
+tctclist=["Tiki Taka","Possession Game","Park The Bus","Quick Counter","Long Ball","Out Wide","Gegenpressing"]
+refs=['Chandu','Srini','J Jayaram','Sudheendra','Kunal Land']
+stadiums=['Pe Ground','Vyasa','Camp Nou','Santiago Bernabeu','Etihad Stadium','Allianz Arena']
+
+def start():
+    print("NAME,POSITION,RATING,COSTPRICE,SELLPRICE,CARDTYPE")
+    c=0
+    a=random.choice(gks)
+    if a not in team:
+        team.append(a)
+        print(a)
+    a = random.choice(rbs)
+    if a not in team:
+        team.append(a)
+        print(a)
+    a = random.choice(lbs)
+    if a not in team:
+        team.append(a)
+        print(a)
+    while c<2:
+        a = random.choice(cbs)
+        if a not in team:
+            team.append(a)
+            print(a)
+            c+=1
+    a = random.choice(cdms)
+    if a not in team:
+        team.append(a)
+        print(a)
+    a = random.choice(cms)
+    if a not in team:
+        team.append(a)
+        print(a)
+    a = random.choice(cams)
+    if a not in team:
+        team.append(a)
+        print(a)
+    a = random.choice(sts)
+    if a not in team:
+        team.append(a)
+        print(a)
+    a = random.choice(lws)
+    if a not in team:
+        team.append(a)
+        print(a)
+    a = random.choice(rws)
+    if a not in team:
+        team.append(a)
+        print(a)
+    q = 'create table ' + user + '(NAME varchar(30) primary key,POSITION varchar(4),RATING int(2), COSTPRICE int(10), SELLPRICE int(10), CARDTYPE varchar(20), foreign key(NAME) references players(NAME))'
+    mycur.execute(q)
+    for i in team:
+        q = "insert into " + user + " values(%s,%s,%s,%s,%s,%s)"
+        mycur.execute(q, (i[0], i[1], i[2], i[3], i[4], i[5]))
+    q = 'create table ' + user + 'admineleven(NAME varchar(30) primary key,POSITION varchar(4),RATING int(2), COSTPRICE int(10), SELLPRICE int(10), CARDTYPE varchar(20), foreign key(NAME) references players(NAME))'
+    mycur.execute(q)
+    mycon.commit()
+
+def dailying():
+    dt=datetime.now()
+    global bal
+    print("You have been rewarded with 5000 credits!")
+    bal += 5000
+    balupdate()
+    q = "update users set LASTDAILY='{}' where CLUBNAME='{}'".format(dt, user)
+    mycur.execute(q)
+    mycon.commit()
+
+def elevenupdate():
+    if len(eleven)==11:
+        q="delete from "+user+"admineleven"
+        mycur.execute(q)
+        q="insert into "+user+"admineleven values(%s,%s,%s,%s,%s,%s)"
+        for i in eleven:
+            mycur.execute(q,(i[0], i[1], i[2], i[3], i[4], i[5]))
+        q="update users set eleven = 'Yes' where clubname='{}'".format(user)
+        mycur.execute(q)
+        mycon.commit()
+    else:
+        q = "delete from " + user + "admineleven"
+        mycur.execute(q)
+        q = "update users set eleven = 'No' where clubname='{}'".format(user)
+        mycur.execute(q)
+        mycon.commit()
+
+
+def daily():
+    dt = datetime.now()
+    a = "select LASTDAILY from users where CLUBNAME ='{}'".format(user)
+    mycur.execute(a)
+    d = mycur.fetchone()
+    o = d[0]
+    if o == None:
+        dailying()
+    else:
+        b = "select addtime('{}','24:00')".format(o)
+        mycur.execute(b)
+        c = mycur.fetchone()
+        p = datetime.strptime(c[0], '%Y-%m-%d %H:%M:%S')
+        if dt > p:
+            dailying()
+        else:
+            print("You have used your daily reward within the last 1 day. Only 1 daily is permitted per day.")
+
+def elevening():
+    global fil
+    global disc
+    if disc==False:
+        for i in team:
+            if i[1] == pos and i not in eleven:
+                print(i)
+        c=0
+        while c==0:
+            n = input("Enter the name of your "+pos+".\n If you wish to discard your 11, type DISCARD. ").title().strip()
+            if n=='Discard':
+                disc=True
+                eleven.clear()
+                print("Discarded your 11.")
+                c=1
+
+            else:
+                for i in team:
+                    if i[0] == n and i[1]==pos and i not in eleven:
+                            eleven.append(i)
+                            fil = n + ".png"
+                            img()
+                            print(pos,"added successfully.")
+                            c=1
+                            break
+                else:
+                        print("Invalid Player. This player either does not exist in your team, or is not compatible with the required position, or is already in your eleven. Try again.")
+
+def elevenn():
+    global pos
+    global fil
+    global disc
+    disc=False
+    if eleven==[]:
+        print("You do not have an 11 yet. You have to create a starting 11.")
+        print("NOTE: Your 11 must comprise of 1 GK, 1 LB, 1 RB, 2 CBs, 1 CM, 1 CDM, 1 CAM, 1 ST, 1 RW, 1 LW.")
+        pos='GK'
+        elevening()
+        pos='LB'
+        elevening()
+        pos = 'RB'
+        elevening()
+        pos = 'CB'
+        for i in range(2):
+            elevening()
+        pos = 'CM'
+        elevening()
+        pos = 'CDM'
+        elevening()
+        pos = 'CAM'
+        elevening()
+        pos = 'ST'
+        elevening()
+        pos='LW'
+        elevening()
+        pos='RW'
+        elevening()
+        if disc==False:
+            print("Your playing 11 is completed!")
+        elevenupdate()
+        for i in eleven:
+            print(i)
+    else:
+        for i in eleven:
+            print(i)
+        b=0
+        while b==0:
+            m=input("Do you want to make changes to your team?\nEnter 'YES' to confirm or 'NO' to decline.").lower().strip()
+            if m=='yes':
+                n=input("Enter the name of the player you want to remove.").title().strip()
+                for i in eleven:
+                    if i[0]==n:
+                        pos=i[1]
+                        eleven.remove(i)
+                        fil = n + ".png"
+                        img()
+                        print(n,"has been removed from your 11. Choose your replacement from the following players: ")
+                        elevening()
+                        elevenupdate()
+                        b=1
+                        break
+                else:
+                    print("This player is not in your 11. Try again.")
+            elif m=='no':
+                print("OK. Your 11 remains unchanged.")
+                b=1
+                break
+            else:
+                print("Invalid input. Try again.")
+
+def tactic():
+    global tctc
+    global tctclist
+    if tctc in tctclist:
+        while True:
+            k=input("Your current tactic is "+tctc+". Do you want to change it?\nEnter 'YES' to confirm or 'NO' to decline.").lower().strip()
+            if k=='yes':
+                g=0
+                while g==0:
+                    print("Choose your tactics from the following: ")
+                    for i in tctclist:
+                        print(i)
+                    m=input("Enter the name of the tactic you want to apply: ").title().strip()
+                    if m in tctclist:
+                        print("Tactic successfully applied.")
+                        tctc=m
+                        q="update users set tactic='{}' where clubname='{}'".format(tctc,user)
+                        mycur.execute(q)
+                        mycon.commit()
+                        g=1
+                    else:
+                        print("Invalid tactic. Try again.")
+                break
+            elif k=='no':
+                print("OK. Your tactic remains",tctc)
+                break
+            else:
+                print("Invalid input. Try again.")
+    else:
+        while True:
+            print("Choose your tactics from the following: ")
+            for i in tctclist:
+                print(i)
+            m = input("Enter the name of the tactic you want to apply: ").title().strip()
+            if m in tctclist:
+                print("Tactic successfully applied.")
+                tctc = m
+                q = "update users set tactic='{}' where clubname='{}'".format(tctc, user)
+                mycur.execute(q)
+                mycon.commit()
+                break
+            else:
+                print("Invalid tactic. Try again.")
+
+def manage():
+    while True:
+        a = input("""Here are your team management options:
+                   .buy to buy a player.
+                   .sell to sell a player.
+                   .market to see all available players.
+                   .show to show a player.
+                   .11 to set your 11.
+                   .tactic to choose your in-game tactics.
+                   .menu to go back to original menu.""").lower().strip()
+        if a == '.buy':
+            buy()
+        elif a == '.sell':
+            sell()
+        elif a == '.market':
+            for i in results:
+                print(i)
+        elif a == '.show':
+            show()
+        elif a == '.11':
+            elevenn()
+        elif a == '.tactic':
+            tactic()
+        elif a == '.menu':
+            break
+        else:
+            print("Invalid input. Try again.")
+
+def img():
+        global root
+        root=Tk()
+        root.title('Pepl Game')
+
+        # icon
+        root.iconbitmap('logo.ico')
+
+        # text
+        mylabel1 = Label(root)
+        mylabel1.pack()
+
+        # images
+        my_img = ImageTk.PhotoImage(Image.open(fil))
+        my_label = Label(image=my_img)
+        my_label.image = my_img  # This line is important to keep a reference to the image
+        my_label.pack()
+
+
+        # exit button
+        button_quit = Button(root, text="OK", command=close_window)
+        button_quit.pack()
+        root.mainloop()
+
+def close_window():
+    root.destroy()
+
+def sell():
+    global bal
+    global fil
+    n=input("Enter the name of the player you want to sell: ").title().strip()
+    c=0
+    for i in team:
+        if i[0]==n:
+            while True:
+                fil = n + ".png"
+                img()
+                k=input("Are you sure you want to sell "+n+"? You will receive "+str(i[4])+" credits.\nEnter 'YES' to confirm or 'NO' to decline.\nNOTE: If you sell a player in your 11, your 11 will get discarded.").lower().strip()
+                if k=='yes':
+                    c=1
+                    bal+=i[4]
+                    balupdate()
+                    if i in eleven:
+                        eleven.clear()
+                        elevenupdate()
+                    q="delete from "+user+" where name='{}'".format(n)
+                    mycur.execute(q)
+                    mycon.commit()
+                    team.remove(i)
+
+                    print(n,"is successfully sold!")
+                    print("Your new balance is",bal,"credits.")
+                    break
+                elif k=='no':
+                    c=1
+                    print("OK.",n,"remains in your club.")
+                    break
+                else:
+                    print("Invalid input. Try again.")
+            if c==1:
+                break
+    else:
+            print("You do not have this player.")
+
+def buy():
+    global bal
+    global fil
+    c=0
+    n=input("Enter the name of the player you wish to buy: ").title().strip()
+    for i in results:
+        if i[0]==n:
+            fil = n + ".png"
+            img()
+            print("NAME,POSITION,RATING,COSTPRICE,SELLPRICE,CARDTYPE\n",i)
+            print ("Your current balance is",bal,".\nYou need",i[3],"credits to buy",i[0],".")
+            while True:
+                j=input("Are you sure you want to buy "+i[0]+"?\nEnter 'YES' to confirm or 'NO' to decline.").lower().strip()
+                if j=='yes':
+                    c=1
+                    if bal>=i[3]:
+                        if i not in team:
+                            print(i[0],"joins your club!")
+                            bal-=i[3]
+                            print("Your new balance is",bal,".")
+                            balupdate()
+                            team.append(i)
+                            q = "insert into " + user + " values(%s,%s,%s,%s,%s,%s)"
+                            mycur.execute(q, (i[0], i[1], i[2], i[3], i[4], i[5]))
+                            mycon.commit()
+                        elif i in team:
+                            print("You already have",i[0],". You cannot buy",i[0],"again.")
+                            print("Your balance remains",bal,".")
+                    else:
+                        print("Transfer collapsed. You do not have enough credits to buy",i[0],".")
+                    break
+                elif j=='no':
+                    c=1
+                    print("Transfer collapsed.")
+                    break
+                else:
+                    print("Invalid input. Try again")
+            if c==1:
+                break
+    else:
+        print("No such player is available in the market.")
+def pack():
+    global bal
+    global fil
+    c=0
+    while True:
+        n=input('Which pack would you like to buy?\nBronze Pack- 3 players- 10000 credits.\nSilver Pack- 3 players- 50000 credits.\nGold Pack- 3 players- 100000 credits.\nIcon Pack- 1 player- 500000 credits.\nEnter "B" for Bronze,"S" for Silver,"G" for Gold,"I" for Icon,"E" to abort.').lower().strip()
+        if n=='b':
+            if bal>=10000:
+                while c<3:
+                    p=random.choice(bronze)
+                    if p not in team:
+                        team.append(p)
+                        c+=1
+                        q = "insert into " + user + " values(%s,%s,%s,%s,%s,%s)"
+                        mycur.execute(q, (p[0], p[1], p[2], p[3], p[4], p[5]))
+                        mycon.commit()
+                        fil = p[0] + ".png"
+                        img()
+                        print(p[0], "joins your club!")
+                bal-=10000
+                balupdate()
+                print("Your new balance is",bal,"credits.")
+            else:
+                print("You do not have enough credits to buy this pack.")
+        elif n=='s':
+            if bal>=50000:
+                while c<3:
+                    p=random.choice(silver)
+                    if p not in team:
+                        team.append(p)
+                        c+=1
+                        q = "insert into " + user + " values(%s,%s,%s,%s,%s,%s)"
+                        mycur.execute(q, (p[0], p[1], p[2], p[3], p[4], p[5]))
+                        mycon.commit()
+                        fil = p[0] + ".png"
+                        img()
+                        print(p[0], "joins your club!")
+                bal-=50000
+                balupdate()
+                print("Your new balance is",bal,"credits.")
+            else:
+                print("You do not have enough credits to buy this pack.")
+        elif n=='g':
+            if bal>=100000:
+                while c<3:
+                    p=random.choice(gold)
+                    if p not in team:
+                        team.append(p)
+                        c+=1
+                        q = "insert into " + user + " values(%s,%s,%s,%s,%s,%s)"
+                        mycur.execute(q, (p[0], p[1], p[2], p[3], p[4], p[5]))
+                        mycon.commit()
+                        fil =p[0] + ".png"
+                        img()
+                        print(p[0], "joins your club!")
+                bal-=100000
+                balupdate()
+                print("Your new balance is",bal,"credits.")
+            else:
+                print("You do not have enough credits to buy this pack.")
+        elif n=='i':
+            if bal>=500000:
+                while c<1:
+                    p=random.choice(icon)
+                    if p not in team:
+                        team.append(p)
+                        c+=1
+                        q = "insert into " + user + " values(%s,%s,%s,%s,%s,%s)"
+                        mycur.execute(q, (p[0], p[1], p[2], p[3], p[4], p[5]))
+                        mycon.commit()
+                        fil = p[0] + ".png"
+                        img()
+                        print(p[0], "joins your club!")
+                bal-=500000
+                balupdate()
+                print("Your new balance is",bal,"credits.")
+            else:
+                print("You do not have enough credits to buy this pack.")
+        elif n=='e':
+            print("OK. Aborting pack process.")
+            break
+        elif n=='cheatpackakash':
+            print("Cheat code executed.")
+            q="select * from players where name='akash gupta'"
+            mycur.execute(q)
+            k=mycur.fetchone()
+            if k not in team:
+                team.append(k)
+                q = "insert into " + user + " values(%s,%s,%s,%s,%s,%s)"
+                mycur.execute(q, (k[0], k[1], k[2], k[3], k[4], k[5]))
+                mycon.commit()
+                fil = k[0] + ".png"
+                img()
+                print(k[0], "joins your club!")
+            else:
+                print("Cannot execute cheat code. You already have this player.")
+        elif n=='cheatpackaryan':
+            print("Cheat code executed.")
+            q="select * from players where name='aryan singh'"
+            mycur.execute(q)
+            k=mycur.fetchone()
+            if k not in team:
+                team.append(k)
+                q = "insert into " + user + " values(%s,%s,%s,%s,%s,%s)"
+                mycur.execute(q, (k[0], k[1], k[2], k[3], k[4], k[5]))
+                mycon.commit()
+                fil =k[0] + ".png"
+                img()
+                print(k[0], "joins your club!")
+            else:
+                print("Cannot execute cheat code. You already have this player.")
+        elif n=='cheatpackom':
+            print("Cheat code executed.")
+            q="select * from players where name='om kb'"
+            mycur.execute(q)
+            k=mycur.fetchone()
+            if k not in team:
+                team.append(k)
+                q = "insert into " + user + " values(%s,%s,%s,%s,%s,%s)"
+                mycur.execute(q, (k[0], k[1], k[2], k[3], k[4], k[5]))
+                mycon.commit()
+                fil =k[0] + ".png"
+                img()
+                print(k[0], "joins your club!")
+            else:
+                print("Cannot execute cheat code. You already have this player.")
+        else:
+            print("Invalid input.")
+
+def claiming():
+    global fil
+    dt=datetime.now()
+    p = random.choice(results)
+    print(str(p[0]) + " joins your club!")
+    fil =p[0] + ".png"
+    img()
+    if p in team:
+        print("You already have this player! \nYour claim has been nulled. You can claim again.")
+    else:
+        team.append(p)
+        q = "insert into " + user + " values(%s,%s,%s,%s,%s,%s)"
+        mycur.execute(q, (p[0], p[1], p[2], p[3], p[4], p[5]))
+        q="update users set LASTCLAIM='{}' where CLUBNAME='{}'".format(dt,user)
+        mycur.execute(q)
+        mycon.commit()
+
+def claim():
+    dt=datetime.now()
+    a="select LASTCLAIM from users where CLUBNAME ='{}'".format(user)
+    mycur.execute(a)
+    d=mycur.fetchone()
+    o=d[0]
+    if o==None:
+        claiming()
+    else:
+        b = "select addtime('{}','1:00')".format(o)
+        mycur.execute(b)
+        c = mycur.fetchone()
+        p=datetime.strptime(c[0],'%Y-%m-%d %H:%M:%S')
+        if dt>p:
+            claiming()
+        else:
+            print("You have claimed within the last 1 hour. Only 1 claim is permitted per hour.")
+
+def show():
+    global fil
+    n = input("Player name:").title().strip()
+    c = 0
+    for i in team:
+        if n in i:
+            c += 1
+            fil =n + ".png"
+            img()
+            print("NAME:",i[0],"\nPOSITION:",i[1],"\nRATING:",i[2],"\nCOSTPRICE:",i[3],"\nSELLPRICE:",i[4],"\nCARDTYPE:",i[5] )
+    if c == 0:
+        print("You do not have this player.")
+
+def balupdate():
+    q="update users set BALANCE={} where CLUBNAME='{}'".format(bal,user)
+    mycur.execute(q)
+    mycon.commit()
+
+def signup():
+    name = input("Enter your full name: ").title().strip()
+    j = 0
+    while j == 0:
+        un = input("Enter a unique clubname without any spaces: ").upper().strip()
+        for i in un:
+            if i.isalpha() == False:
+                print("This is an invalid clubname. Please try again.")
+                break
+        else:
+            mycur.execute("select clubname from users")
+            a = mycur.fetchall()
+            if un in a:
+                print("This clubname is already taken! Try again.")
+            else:
+                passwd = input("Set a password: ").strip()
+                sql = "insert into users(clubname,password,user) values(%s,%s,%s)"
+                val = (un, passwd, name)
+                mycur.execute(sql, val)
+                mycon.commit()
+                j = 1
+                global user
+                user=un
+                print("Your club has been created!")
+                print("You have been awarded 10,000 credits to start your career.")
+                global bal
+                bal=10000
+                balupdate()
+                while True:
+                    print("Enter '.start' to start your career by claiming 11 free players! ")
+                    s = input().strip()
+                    if s == '.start':
+                        start()
+                        break
+                    else:
+                        print("Try again.")
+
+def login():
+    c = 0
+    un = input("Enter clubname: ").upper().strip()
+    p = input("Enter password: ").strip()
+    mycur.execute("select * from users")
+    up = mycur.fetchall()
+    for j in up:
+        if j[0] == un and j[1] == p:
+            global bal
+            global user
+            global tctc
+            user = un
+            q="select balance from users where clubname='{}'".format(user)
+            mycur.execute(q)
+            a=mycur.fetchone()
+            bal=a[0]
+            q='select * from '+user+'admineleven'
+            mycur.execute(q)
+            s=mycur.fetchall()
+            for i in s:
+                eleven.append(i)
+            q="select tactic from users where clubname='{}'".format(user)
+            mycur.execute(q)
+            u=mycur.fetchone()
+            tctc=u[0]
+            print("Login successful. Welcome", str(j[2]))
+            print(j[0], "is glad to have you back.")
+            print("Your balance is", bal, "credits.")
+            c += 1
+            q="select * from "+user
+            mycur.execute(q)
+            a=mycur.fetchall()
+            for i in a:
+                team.append(i)
+            break
+    if c == 0:
+        print("Login failed. Please enter valid clubname and password.")
+        print("NOTE: Credentials are case sensitive.")
+
+def main():
+    team.clear()
+    comp=True
+    while comp==True:
+        try:
+            k=int(input("Welcome to the PEPL game. Press 1 to login to existing club. Press 2 to create new club."))
+            if k==1:
+                login()
+                if len(team)>0:
+                    comp=False
+                    menu()
+            elif k==2:
+                signup()
+                if len(team)>0:
+                    comp=False
+                    menu()
+            else:
+                print("Invalid input. Try again")
+        except ValueError:
+            print("Invalid input. Try again")
+
+
+
+def match():
+    global bal
+    global fil
+    q="select clubname from users where clubname not in ('{}') and tactic is not null and eleven='Yes'".format(user)
+    mycur.execute(q)
+    t=mycur.fetchall()
+    mt=[]
+    for i in t:
+        print(i[0].upper())
+        mt.append(i[0].upper())
+    n=input("These are the available opponents. Who do you wish to play against?").upper().strip()
+    if n in mt:
+        print("Match between",user,"and",n,"will commence soon.")
+        print("Winner receives 10000 credits. Loser receives 2000 credits. In case of draw both teams receive 4000 credits.\n")
+        while True:
+            for i in refs:
+                print(i)
+            m=input("Enter the name of the match referee: ").title().strip()
+            if m in refs:
+                print("Referee chosen successfully.")
+                rf=m
+                break
+            else:
+                print("Invalid referee. Try again.")
+        while True:
+            for i in stadiums:
+                print(i)
+            l=input("Enter the name of the stadium: ").title().strip()
+            if l in stadiums:
+                print("Stadium chosen successfully.")
+                std=l
+                break
+            else:
+                print("Invalid stadium. Try again.")
+        q="select tactic from users where clubname='{}'".format(user)
+        mycur.execute(q)
+        h=mycur.fetchone()
+        tctc1=h[0].title()
+        q = "select tactic from users where clubname='{}'".format(n)
+        mycur.execute(q)
+        h = mycur.fetchone()
+        tctc2 = h[0].title()
+
+        print(user,"VS",n)
+        print()
+        print("LINEUPS:")
+        print()
+        print(user)
+        print("TACTIC: ",tctc1)
+        q="select * from "+user+"admineleven"
+        mycur.execute(q)
+        team1=mycur.fetchall()
+        for i in team1:
+            print(i[0],i[1],sep='   ')
+        print()
+        print(n)
+        print("TACTIC: ",tctc2)
+        q = "select * from " + n + "admineleven"
+        mycur.execute(q)
+        team2 = mycur.fetchall()
+        for i in team2:
+            print(i[0],i[1],sep='   ')
+        print()
+        print("STADIUM: ",std)
+        print("REFEREE: ",rf)
+        print()
+        o=input("Enter any key to start the match: ")
+        players1=[]
+        for i in team1:
+            players1.append(i[0])
+        players2 = []
+        for i in team2:
+            players2.append(i[0])
+        players=players1+players2
+        m1=random.choice(players1)
+        m2=random.choice(players2)
+        m=random.choice(players)
+        rating1=0
+        for i in team1:
+            rating1+=i[2]
+        rating2=0
+        for i in team2:
+            rating2+=i[2]
+        if rating1 > 0 and rating2 > 0:
+
+            if rating1 > rating2:  # in team one's favor
+                goals1 = random.randint(0, 5)  # both teams have a shot at victory,team 1 has higher chance
+                goals2 = random.randint(0, 2)
+                goalscorers1 = []
+                time1 = []
+                goalscorers2 = []
+                time2 = []
+                for i in range(goals1):
+                    goalscorers1.append(random.choice(players1))
+                    time1.append(random.randint(1, 90))
+                    time1.sort()
+                for i in range(goals2):
+                    goalscorers2.append(random.choice(players2))
+                    time2.append(random.randint(1, 90))
+                    time2.sort()
+                print(user.upper())
+                for i in range(goals1):
+                    print(time1[i], "\'     ", goalscorers1[i])
+                for i in range(3):
+                    print()
+                print(n.upper())
+                for i in range(goals2):
+                    print(time2[i], "\'     ", goalscorers2[i])
+                for i in range(3):
+                    print()
+                print("FINAL SCORE: ", goals1, "-", goals2)
+                if goals1 > goals2:
+                    print(user, " wins the game!")
+                    print("Man of the match: ", m1)
+                    fil = m1 + ".png"
+                    img()
+                    bal += 10000
+                    balupdate()
+                    q = "update users set balance=balance-2000 where clubname='{}'".format(n)
+                    mycur.execute(q)
+                    print("You have won 10000 credits.")
+
+                elif goals2 > goals1:
+                    print(n, " wins the game!")
+                    print("Man of the match: ", m2)
+                    fil = m2 + ".png"
+                    img()
+                    bal += 2000
+                    balupdate()
+                    q = "update users set balance=balance+10000 where clubname='{}'".format(n)
+                    mycur.execute(q)
+                    print("You have won 2000 credits.")
+                elif goals2 == goals1:
+                    print("The game ends in a draw!")
+                    print("Man of the match: ", m)
+                    fil =m + ".png"
+                    img()
+                    bal += 4000
+                    balupdate()
+                    q = "update users set balance=balance+4000 where clubname='{}'".format(n)
+                    mycur.execute(q)
+                    print("You have won 4000 credits.")
+
+
+            elif rating2 > rating1:  # in team two's favor
+                goals2 = random.randint(0, 5)
+                goals1 = random.randint(0, 2)
+                goalscorers1 = []
+                time1 = []
+                goalscorers2 = []
+                time2 = []
+                for i in range(goals1):
+                    goalscorers1.append(random.choice(players1))
+                    time1.append(random.randint(1, 90))
+                    time1.sort()
+                for i in range(goals2):
+                    goalscorers2.append(random.choice(players2))
+                    time2.append(random.randint(1, 90))
+                    time2.sort()
+                print(user.upper())
+                for i in range(goals1):
+                    print(time1[i], "\'     ", goalscorers1[i])
+                for i in range(3):
+                    print()
+                print(n.upper())
+                for i in range(goals2):
+                    print(time2[i], "\'     ", goalscorers2[i])
+                for i in range(3):
+                    print()
+                print("FINAL SCORE: ", goals1, "-", goals2)
+                if goals1 > goals2:
+                    print(user, " wins the game!")
+                    print("Man of the match: ", m1)
+                    fil =m1 + ".png"
+                    img()
+                    bal += 10000
+                    balupdate()
+                    q = "update users set balance=balance-2000 where clubname='{}'".format(n)
+                    mycur.execute(q)
+                    print("You have won 10000 credits.")
+                elif goals2 > goals1:
+                    print(n, " wins the game!")
+                    print("Man of the match: ", m2)
+                    fil =m2 + ".png"
+                    img()
+                    bal += 2000
+                    balupdate()
+                    q = "update users set balance=balance+10000 where clubname='{}'".format(n)
+                    mycur.execute(q)
+                    print("You have won 2000 credits.")
+                elif goals2 == goals1:
+                    print("The game ends in a draw!")
+                    print("Man of the match: ", m)
+                    fil =m + ".png"
+                    img()
+                    bal += 4000
+                    balupdate()
+                    q = "update users set balance=balance+4000 where clubname='{}'".format(n)
+                    mycur.execute(q)
+                    print("You have won 4000 credits.")
+
+
+            elif rating1 == rating2:  # if ratings are equal,no one's favor
+                goals1 = random.randint(0, 3)
+                goals2 = random.randint(0, 3)
+                goalscorers1 = []
+                time1 = []
+                goalscorers2 = []
+                time2 = []
+                for i in range(goals1):
+                    goalscorers1.append(random.choice(players1))
+                    time1.append(random.randint(1, 90))
+                    time1.sort()
+                for i in range(goals2):
+                    goalscorers2.append(random.choice(players2))
+                    time2.append(random.randint(1, 90))
+                    time2.sort()
+                print(user.upper())
+                for i in range(goals1):
+                    print(time1[i], "\'     ", goalscorers1[i])
+                for i in range(3):
+                    print()
+                print(n.upper())
+                for i in range(goals2):
+                    print(time2[i], "\'     ", goalscorers2[i])
+                for i in range(3):
+                    print()
+                print("FINAL SCORE: ", goals1, "-", goals2)
+                if goals1 > goals2:
+                    print(user, " wins the game!")
+                    print("Man of the match: ", m1)
+                    fil =m1 + ".png"
+                    img()
+                    bal += 10000
+                    balupdate()
+                    q = "update users set balance=balance-2000 where clubname='{}'".format(n)
+                    mycur.execute(q)
+                    print("You have won 10000 credits.")
+                elif goals2 > goals1:
+                    print(n, " wins the game!")
+                    print("Man of the match: ", m2)
+                    fil =m2 + ".png"
+                    img()
+                    bal += 2000
+                    balupdate()
+                    q = "update users set balance=balance+10000 where clubname='{}'".format(n)
+                    mycur.execute(q)
+                    print("You have won 2000 credits.")
+                elif goals2 == goals1:
+                    print("The game ends in a draw!")
+                    print("Man of the match: ", m)
+                    fil = m + ".png"
+                    img()
+                    bal += 4000
+                    balupdate()
+                    q = "update users set balance=balance+4000 where clubname='{}'".format(n)
+                    mycur.execute(q)
+                    print("You have won 4000 credits.")
+            print("Match completed. Returning to main menu.")
+    else:
+        print("Invalid team.")
+
+
+
+
+def menu():
+    while True:
+        n=input("""MENU:  
+                .claim to claim new player.
+                .pack to buy a player pack.
+                .club to see your squad.
+                .manage to manage your players.
+                .bal to check your balance.
+                .daily to receive daily reward.
+                .match to play a match.
+                .exit to exit.""").lower().strip()
+        if n == '.claim':
+            claim()
+        elif n=='.pack':
+            pack()
+        elif n == '.club':
+            print("NAME,POSITION,RATING,COSTPRICE,SELLPRICE,CARDTYPE")
+            for i in team:
+                print(i)
+        elif n=='.bal':
+            print("Your balance is",bal,"credits.")
+        elif n=='.manage':
+            manage()
+        elif n=='.daily':
+            daily()
+        elif n=='.match':
+            if len(eleven)==11 and tctc in tctclist:
+                match()
+            else:
+                print("You do not have an eligible 11/tactic to play a match. Choose an appropriate 11 and tactic to play.")
+        elif n == '.exit':
+            print("Exiting game. Thank you for playing.")
+            break
+        else:
+            print("Invalid response.")
+
+main()
